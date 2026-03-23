@@ -112,6 +112,81 @@ function init(THREE, OrbitControls) {
 	pointLight2.position.set(8, 3, 8);
 	scene.add(pointLight2);
 
+	// Función para crear textura del suelo
+	function createGroundMaterial(THREE) {
+		const canvas = document.createElement('canvas');
+		canvas.width = 128;
+		canvas.height = 128;
+		const ctx = canvas.getContext('2d');
+		
+		// Gradiente base (tierra marrón)
+		const grad = ctx.createLinearGradient(0, 0, 128, 128);
+		grad.addColorStop(0, '#8b6f47');
+		grad.addColorStop(0.5, '#9b8360');
+		grad.addColorStop(1, '#7a5c3d');
+		ctx.fillStyle = grad;
+		ctx.fillRect(0, 0, 128, 128);
+		
+		// Textura de tierra con variación
+		for (let i = 0; i < 200; i++) {
+			const x = Math.random() * 128;
+			const y = Math.random() * 128;
+			const size = Math.random() * 3 + 1;
+			ctx.beginPath();
+			ctx.arc(x, y, size, 0, Math.PI * 2);
+			ctx.fillStyle = i % 2 === 0 ? 'rgba(139, 111, 71, 0.3)' : 'rgba(154, 131, 96, 0.3)';
+			ctx.fill();
+		}
+		
+		// Detalles de piedrecillas
+		for (let i = 0; i < 100; i++) {
+			const x = Math.random() * 128;
+			const y = Math.random() * 128;
+			const size = Math.random() * 2 + 0.5;
+			ctx.beginPath();
+			ctx.arc(x, y, size, 0, Math.PI * 2);
+			ctx.fillStyle = i % 3 === 0 ? '#6b5d52' : (i % 3 === 1 ? '#8b7355' : '#7a6347');
+			ctx.fill();
+		}
+		
+		// Líneas y grietas sutiles
+		for (let i = 0; i < 30; i++) {
+			ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+			ctx.lineWidth = Math.random() + 0.5;
+			ctx.beginPath();
+			ctx.moveTo(Math.random() * 128, Math.random() * 128);
+			ctx.lineTo(Math.random() * 128, Math.random() * 128);
+			ctx.stroke();
+		}
+		
+		const texture = new THREE.Texture(canvas);
+		texture.needsUpdate = true;
+		texture.repeat.set(4, 4);
+		texture.wrapS = THREE.RepeatWrapping;
+		texture.wrapT = THREE.RepeatWrapping;
+		return new THREE.MeshPhongMaterial({ 
+			map: texture, 
+			color: 0x8b6f47,
+			shininess: 20 
+		});
+	}
+
+	// Crear el suelo
+	const groundGeom = new THREE.PlaneGeometry(30, 30);
+	const groundMat = createGroundMaterial(THREE);
+	const ground = new THREE.Mesh(groundGeom, groundMat);
+	ground.rotation.x = -Math.PI / 2;
+	ground.position.y = -0.1;
+	ground.receiveShadow = true;
+	scene.add(ground);
+	
+	// Agregar sombras dinámicas a los objetos
+	renderer.shadowMap.enabled = true;
+	dirLight.castShadow = true;
+	dirLight.shadow.mapSize.width = 2048;
+	dirLight.shadow.mapSize.height = 2048;
+	dirLight.shadow.camera.far = 50;
+
 	// Función para crear una flor amarilla ultra detallada con múltiples capas
 	function createFlower() {
 		const flower = new THREE.Group();
@@ -119,6 +194,8 @@ function init(THREE, OrbitControls) {
 		// Tallo curvo principal
 		const stem = createCurvedStem(THREE);
 		stem.position.y = 0;
+		stem.castShadow = true;
+		stem.receiveShadow = true;
 		flower.add(stem);
 
 		// Ramas secundarias en el tallo
@@ -132,6 +209,8 @@ function init(THREE, OrbitControls) {
 			const branchGeom = new THREE.TubeGeometry(branchCurve, 20, 0.035, 8, false);
 			const branchMat = new THREE.MeshPhongMaterial({ color: 0x7a9d28 });
 			const branch = new THREE.Mesh(branchGeom, branchMat);
+			branch.castShadow = true;
+			branch.receiveShadow = true;
 			flower.add(branch);
 		}
 
@@ -140,6 +219,8 @@ function init(THREE, OrbitControls) {
 		const centerMat = createCenterMaterial(THREE);
 		const center = new THREE.Mesh(centerGeom, centerMat);
 		center.position.y = 2.5;
+		center.castShadow = true;
+		center.receiveShadow = true;
 		flower.add(center);
 
 		// Estambres (síes) dentro del centro
@@ -159,6 +240,7 @@ function init(THREE, OrbitControls) {
 				Math.sin(angle) * radius
 			);
 			stamen.scale.set(0.7, 1.2 + Math.random() * 0.3, 0.7);
+			stamen.castShadow = true;
 			flower.add(stamen);
 		}
 
@@ -172,6 +254,8 @@ function init(THREE, OrbitControls) {
 			petal.rotation.z = Math.PI / 2 + (Math.random() - 0.5) * 0.25;
 			petal.rotation.y = angle + (Math.random() - 0.5) * 0.15;
 			petal.scale.set(1.1, 1.9 + Math.random() * 0.25, 0.55 + Math.random() * 0.1);
+			petal.castShadow = true;
+			petal.receiveShadow = true;
 			flower.add(petal);
 		}
 
@@ -188,6 +272,8 @@ function init(THREE, OrbitControls) {
 			petal.rotation.y = angle;
 			petal.scale.set(0.85, 1.5 + Math.random() * 0.2, 0.45);
 			petal.position.y += 0.1;
+			petal.castShadow = true;
+			petal.receiveShadow = true;
 			flower.add(petal);
 		}
 
@@ -205,6 +291,8 @@ function init(THREE, OrbitControls) {
 			petal.rotation.y = angle;
 			petal.scale.set(0.75, 1.3 + Math.random() * 0.15, 0.4);
 			petal.position.y += 0.15;
+			petal.castShadow = true;
+			petal.receiveShadow = true;
 			flower.add(petal);
 		}
 
@@ -225,6 +313,8 @@ function init(THREE, OrbitControls) {
 			);
 			leaf.rotation.z = angle + (Math.random() - 0.5) * 0.3;
 			leaf.scale.set(1.4 - i * 0.15, 0.6 + Math.random() * 0.15, 0.75);
+			leaf.castShadow = true;
+			leaf.receiveShadow = true;
 			flower.add(leaf);
 		}
 
